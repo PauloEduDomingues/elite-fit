@@ -46,17 +46,16 @@ model Payment{
   clientId Int
   status PaymentStatus @default(PENDING)
   amount Int
-  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
-  paymentMethodId Int
+  payment PaymentMethod @relation(fields: [paymentMethod], references: [id])
+  paymentMethod String
   due DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model PaymentMethod{
-  id Int @id @default(autoincrement())
+  id String @id
   name String
-  type String
   payments Payment[]
 }
 

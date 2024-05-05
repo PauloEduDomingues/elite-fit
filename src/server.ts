@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import fastify from "fastify";
 import { z } from 'zod'
 import bcrypt from 'bcrypt';
+import { create } from "domain";
 
 const app = fastify();
 
@@ -94,6 +95,71 @@ app.post('/clients', async (request, reply) => {
             neighborhood,
             complement,
             zipCode,
+        }
+    });
+    return reply.status(201).send();
+});
+
+app.get('/clients/:id', async (request, reply) => {
+    const getClientSchema = z.object({
+        id: z.string()
+    });
+    const { id } = getClientSchema.parse(request.params);
+    const client = await prisma.client.findUnique({
+        where: {
+            id: Number(id)
+        }
+    });
+    if(!client){
+        return reply.status(404).send({
+            message: 'Client not exists!'
+        });
+    }
+    return reply.status(200).send(client);
+});
+
+app.post('/payments/client/:id', async(request, reply) => {
+    const getClientSchema = z.object({
+        id: z.number().int()
+    });
+    const { id } = getClientSchema.parse(request.params);
+    const client = await prisma.client.findUnique({
+        where: {
+            id: id
+        }
+    });
+    if(!client){
+        return reply.status(404).send({
+            message: 'Client not exists!'
+        });
+    }
+    const createPaymentSchema = z.object({
+        amount: z.number().int(),
+        paymentMethod: z.string(),
+        due: z.date(),
+    });
+    const { amount, paymentMethod, due } = createPaymentSchema.parse(request.body);
+    await prisma.payment.create({
+        data: {
+            clientId: id,
+            amount: amount,
+            paymentMethod: paymentMethod,
+            due: due
+        }
+    })
+    return reply.status(201).send(); 
+});
+
+app.post('/payments/method', async(request, reply) => {
+    const createPaymentMethodSchema = z.object({
+        id: z.string(),
+        name: z.string()
+    });
+    const { id, name } = createPaymentMethodSchema.parse(request.body);
+    await prisma.paymentMethod.create({
+        data: {
+            id: id,
+            name: name
         }
     });
     return reply.status(201).send();

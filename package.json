@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "tsx src/server.ts"
+    "dev": "tsx src/server.ts",
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.13.0",
+    "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "fastify": "^4.26.2",
     "zod": "^3.23.6"
