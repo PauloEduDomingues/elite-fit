@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User{
+  id Int @id @default(autoincrement())
+  name String
+  email String @unique
+  password String
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client{
+  id Int @id @default(autoincrement())
+  name String
+  cpf String
+  phone String
+  email String @unique
+  address String
+  number String
+  neighborhood String
+  complement String?
+  zipCode String
+  payments Payment[]
+  subscription Subscription[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment{
+  id Int @id @default(autoincrement())
+  client Client @relation(fields: [clientId], references: [id])
+  clientId Int
+  status PaymentStatus @default(PENDING)
+  amount Int
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  paymentMethodId Int
+  due DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentMethod{
+  id Int @id @default(autoincrement())
+  name String
+  type String
+  payments Payment[]
+}
+
+enum PaymentStatus{
+  PENDING
+  CANCELED
+  PAID
+}
+
+model Subscription{
+  id Int @id @default(autoincrement())
+  client Client @relation(fields: [clientId], references: [id])
+  clientId Int
+  plan Plan @relation(fields: [planId], references: [id])
+  planId Int
+  status SubscriptionStatus @default(ENABLED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum SubscriptionStatus{
+  ENABLED
+  DESABLED
+  CANCELED
+}
+
+model Plan{
+  id Int @id @default(autoincrement())
+  name String
+  description String
+  price Int
+  recurrency Recurrency
+  subscription Subscription[]
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Recurrency{
+  MONTH
+  THREE_MONTH
+  SIX_MONTH
+  A_YEAR
+}
