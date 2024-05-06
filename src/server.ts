@@ -120,14 +120,15 @@ app.get('/clients/:id', async (request, reply) => {
 
 app.post('/payments/client/:id', async(request, reply) => {
     const getClientSchema = z.object({
-        id: z.number().int()
+        id: z.string()
     });
     const { id } = getClientSchema.parse(request.params);
     const client = await prisma.client.findUnique({
         where: {
-            id: id
+            id: Number(id)
         }
     });
+    console.log(client)
     if(!client){
         return reply.status(404).send({
             message: 'Client not exists!'
@@ -136,18 +137,41 @@ app.post('/payments/client/:id', async(request, reply) => {
     const createPaymentSchema = z.object({
         amount: z.number().int(),
         paymentMethod: z.string(),
-        due: z.date(),
+        due: z.string(),
     });
     const { amount, paymentMethod, due } = createPaymentSchema.parse(request.body);
     await prisma.payment.create({
         data: {
-            clientId: id,
+            clientId: Number(id),
             amount: amount,
             paymentMethod: paymentMethod,
-            due: due
+            due: new Date(due)
         }
     })
     return reply.status(201).send(); 
+});
+
+app.get('/payments/client/:id', async(request, reply) => {
+
+    const getClientSchema = z.object({
+        id: z.string(),
+    })
+
+    const { id } = getClientSchema.parse(request.params)
+
+    const clientPayments = await prisma.payment.findMany({
+        where: {
+            clientId: Number(id),
+        }
+    })
+
+    if (clientPayments.length == 0){
+        return reply.status(404).send({
+            message: 'No payments for this client'
+        })
+    }
+
+    reply.status(200).send(clientPayments)
 });
 
 app.post('/payments/method', async(request, reply) => {
@@ -164,6 +188,135 @@ app.post('/payments/method', async(request, reply) => {
     });
     return reply.status(201).send();
 });
+
+app.get('/payments/method', async(request, reply) => {
+    const paymentsMethods = await prisma.paymentMethod.findMany();
+    reply.status(200).send(paymentsMethods);
+});
+
+
+
+app.post("/plan", async(request, reply) => {
+
+    const createPlanSchema = z.object({
+        name: z.string(),
+        description: z.string(),
+        price: z.number().int(),
+        recurrency: z.enum(['MONTH', 'THREE_MONTH', 'SIX_MONTH', 'A_YEAR'])
+    })
+
+    const { name, description, price, recurrency } = createPlanSchema.parse(request.body);
+
+    await prisma.plan.create({
+        data: {
+            name,
+            description, 
+            price,
+            recurrency,
+        }
+    })
+    reply.status(201).send()
+})
+
+app.get('/plans', async(request, reply) => {
+    const plans = await prisma.plan.findMany();
+    reply.status(200).send(plans)    
+})
+
+app.get("/plan/:id", async(request, reply) => {
+    
+    const createPlanSchema = z.object({
+        id: z.string()
+    })
+    const { id } = createPlanSchema.parse(request.params)
+
+    try{
+        const plan = await prisma.plan.findUniqueOrThrow({
+            where: {
+                id: Number(id),
+            }
+        })
+
+        reply.status(200).send(plan)
+
+    }catch {
+        return reply.status(404).send({
+            message: "Plan not found!"
+        })
+    }
+})
+
+app.post('/subscription/client/:cliId/plan/:pId', async(request, reply) => {
+    const createClientSchema = z.object({
+        cliId: z.string(),
+        pId: z.string()
+    })
+
+    const { cliId,  pId} = createClientSchema.parse(request.params);
+
+    const result = await Promise.all([
+        prisma.client.findUnique({
+            where: {
+                id: Number(cliId)
+            }
+        }),
+        prisma.plan.findUnique({
+            where:{
+                id: Number(pId)
+            }
+        })
+    ])
+
+    const client = result[0];
+    const plan = result[1] 
+
+    if (!client){
+        return reply.status(404).send({
+            message: "Client not exist!"
+        })
+    }
+    if (!plan){
+        return reply.status(404).send({
+            message: "Plan not found!"
+        })
+    }
+
+    await prisma.subscription.create({
+        data: {
+            clientId: Number(cliId),
+            planId: Number(pId)
+        }
+    })
+
+    return reply.status(201).send()
+})
+
+app.get('/subscriptions', async(request, reply) => {
+    const subscriptions = await prisma.subscription.findMany()
+    reply.status(200).send(subscriptions)
+})
+
+app.get('/subscriptions/client/:cliId', async(request, reply) => {
+    const createClientSchema = z.object({
+        cliId: z.string()
+    })
+
+    const { cliId } = createClientSchema.parse(request.params)
+
+    const subscriptions = await prisma.subscription.findMany({
+        where: {
+            clientId: Number(cliId)
+        }
+    })
+
+    if (subscriptions.length == 0){
+        return reply.status(404).send({
+            message: 'No Subscription of client found!'
+        })
+    }
+    return reply.status(200).send(subscriptions)
+})
+
 
 app.listen({
     host: '0.0.0.0',

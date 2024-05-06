@@ -36,15 +36,25 @@ GET http://localhost:3333/clients/1 HTTP/1.1
 Content-Type: application/json
 
 ###
+GET http://localhost:3333/payments/method HTTP/1.1
+Content-Type: application/json
+
+###
 POST http://localhost:3333/payments/method HTTP/1.1
 Content-Type: application/json
 
 {
-    "id": "credit",
-    "name": "Crédito"
+    "id": "debit",
+    "name": "Débito"
 }
 
 ###
+
+GET http://localhost:3333/payments/client/2 HTTP/1.1
+Content-Type: application/json
+
+###
+
 POST http://localhost:3333/payments/client/1 HTTP/1.1
 Content-Type: application/json
 
@@ -53,3 +63,39 @@ Content-Type: application/json
     "paymentMethod": "credit",
     "due": "2024-06-05"
 }
+
+###
+
+POST http://localhost:3333/plan HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "Mensal",
+    "description": "Neste a pessoa tem acesso total a acadêmia durante a horario de funcionamnto",
+    "price": 1000,
+    "recurrency": "MONTH"
+}
+
+###
+
+GET http://localhost:3333/plans HTTP/1.1
+Content-Type: application/json
+
+###
+
+GET http://localhost:3333/plan/1 HTTP/1.1
+Content-Type: application/json
+
+###
+
+POST http://localhost:3333/subscription/client/1/plan/1 HTTP/1.1
+
+###
+
+GET http://localhost:3333/subscriptions HTTP/1.1
+Content-Type: application/json
+
+###
+
+GET http://localhost:3333/subscriptions/client/2 HTTP/1.1
+Content-Type: application/json
