@@ -56,17 +56,7 @@ app.post('/clients', async (request, reply) => {
         return reply.status(400).send({'message': 'Email already exists!'});
     }
     await prisma.client.create({
-        data: {
-            body.name, 
-            body.cpf,
-            body.phone,
-            body.email,
-            body.address,
-            body.number,
-            body.neighborhood,
-            body.complement,
-            body.zipCode,
-        }
+        data: body
     });
     return reply.status(201).send();
 });
