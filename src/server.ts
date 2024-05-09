@@ -2,7 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import fastify from "fastify";
 import { z } from 'zod'
 import bcrypt from 'bcrypt';
-import { create } from "domain";
+import { createUserSchema } from './validations/create-user-schema';
+import { createClientSchema } from './validations/create-client-schema';
 
 const app = fastify();
 
@@ -23,11 +24,6 @@ app.get('/users', async (request, reply) => {
 });
 
 app.post('/users', async (request, reply) => {
-    const createUserSchema = z.object({
-        name: z.string(),
-        email: z.string().email(),
-        password: z.string()
-    })
     const { name, email, password } = createUserSchema.parse(request.body);
     const emailExists = await prisma.user.findUnique({ 
         where: {
@@ -54,47 +50,22 @@ app.get('/clients', async (request, reply) => {
 });
 
 app.post('/clients', async (request, reply) => {
-    const createClientSchema = z.object({
-        name: z.string(),
-        cpf: z.string(),
-        phone: z.string(),
-        email: z.string().email(),
-        address: z.string(),
-        number: z.string(),
-        neighborhood: z.string(),
-        complement: z.string().optional(),
-        zipCode: z.string(),
-    })
-    const {
-        name, 
-        cpf,
-        phone,
-        email,
-        address,
-        number,
-        neighborhood,
-        complement,
-        zipCode,
-    } = createClientSchema.parse(request.body);
-    const emailExists = await prisma.client.findUnique({ 
-        where: {
-            email: email
-        }
-    });
+    const body = createClientSchema.parse(request.body);
+    const emailExists = await prisma.client.findUnique({ where: { email: body.email } });
     if(emailExists){
         return reply.status(400).send({'message': 'Email already exists!'});
     }
     await prisma.client.create({
         data: {
-            name, 
-            cpf,
-            phone,
-            email,
-            address,
-            number,
-            neighborhood,
-            complement,
-            zipCode,
+            body.name, 
+            body.cpf,
+            body.phone,
+            body.email,
+            body.address,
+            body.number,
+            body.neighborhood,
+            body.complement,
+            body.zipCode,
         }
     });
     return reply.status(201).send();
@@ -105,11 +76,7 @@ app.get('/clients/:id', async (request, reply) => {
         id: z.string()
     });
     const { id } = getClientSchema.parse(request.params);
-    const client = await prisma.client.findUnique({
-        where: {
-            id: Number(id)
-        }
-    });
+    const client = await prisma.client.findUnique({ where: { id: Number(id) }});
     if(!client){
         return reply.status(404).send({
             message: 'Client not exists!'
@@ -118,7 +85,7 @@ app.get('/clients/:id', async (request, reply) => {
     return reply.status(200).send(client);
 });
 
-app.post('/payments/client/:id', async(request, reply) => {
+app.post('/payments/clients/:id', async(request, reply) => {
     const getClientSchema = z.object({
         id: z.string()
     });
@@ -151,7 +118,7 @@ app.post('/payments/client/:id', async(request, reply) => {
     return reply.status(201).send(); 
 });
 
-app.get('/payments/client/:id', async(request, reply) => {
+app.get('/payments/clients/:id', async(request, reply) => {
 
     const getClientSchema = z.object({
         id: z.string(),
@@ -194,9 +161,7 @@ app.get('/payments/method', async(request, reply) => {
     reply.status(200).send(paymentsMethods);
 });
 
-
-
-app.post("/plan", async(request, reply) => {
+app.post("/plans", async(request, reply) => {
 
     const createPlanSchema = z.object({
         name: z.string(),
@@ -223,7 +188,7 @@ app.get('/plans', async(request, reply) => {
     reply.status(200).send(plans)    
 })
 
-app.get("/plan/:id", async(request, reply) => {
+app.get("/plans/:id", async(request, reply) => {
     
     const createPlanSchema = z.object({
         id: z.string()
@@ -246,23 +211,23 @@ app.get("/plan/:id", async(request, reply) => {
     }
 })
 
-app.post('/subscription/client/:cliId/plan/:pId', async(request, reply) => {
+app.post('/subscriptions/clients/:clientId/plans/:planId', async(request, reply) => {
     const createClientSchema = z.object({
-        cliId: z.string(),
-        pId: z.string()
+        clientId: z.string(),
+        planId: z.string()
     })
 
-    const { cliId,  pId} = createClientSchema.parse(request.params);
+    const { clientId,  planId } = createClientSchema.parse(request.params);
 
     const result = await Promise.all([
         prisma.client.findUnique({
             where: {
-                id: Number(cliId)
+                id: Number(clientId)
             }
         }),
         prisma.plan.findUnique({
             where:{
-                id: Number(pId)
+                id: Number(planId)
             }
         })
     ])
@@ -296,12 +261,12 @@ app.get('/subscriptions', async(request, reply) => {
     reply.status(200).send(subscriptions)
 })
 
-app.get('/subscriptions/client/:cliId', async(request, reply) => {
+app.get('/subscriptions/clients/:clientId', async(request, reply) => {
     const createClientSchema = z.object({
-        cliId: z.string()
+        clientId: z.string()
     })
 
-    const { cliId } = createClientSchema.parse(request.params)
+    const { clientId } = createClientSchema.parse(request.params)
 
     const subscriptions = await prisma.subscription.findMany({
         where: {
